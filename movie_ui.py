@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import messagebox
 import requests
 
+TMDB_API_KEY = "03c66155bff05c0c3c2eea47dddaedd3"
+TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
+
 API_BASE_URL = "http://127.0.0.1:8000/api/movies/"
 
 class MovieApp:
@@ -26,6 +29,7 @@ class MovieApp:
         self.year_entry = tk.Entry(root)
         self.year_entry.pack()
 
+        tk.Button(root, text="Fetch Details", command=self.fetch_movie_details).pack(pady=5)
         # Buttons
         tk.Button(root, text="Add Movie", command=self.add_movie).pack(pady=5)
         tk.Button(root, text="Show Movies", command=self.show_movies).pack(pady=5)
@@ -105,6 +109,38 @@ class MovieApp:
             self.show_movies()
         else:
             messagebox.showerror("Error", "Failed to delete movie.")
+    def fetch_movie_details(self):
+        """Fetch movie details from TMDb API."""
+        title = self.title_entry.get().strip()
+        if not title:
+            messagebox.showerror("Error", "Enter a movie title.")
+            return
+
+        params = {
+            "api_key": TMDB_API_KEY,
+            "query": title
+        }
+        response = requests.get(TMDB_SEARCH_URL, params=params)
+        
+        if response.status_code == 200:
+            results = response.json().get("results", [])
+            if results:
+                movie = results[0]  # Get the first search result
+                self.title_entry.delete(0, tk.END)
+                self.title_entry.insert(0, movie["title"])
+
+                self.genre_entry.delete(0, tk.END)
+                self.genre_entry.insert(0, "N/A")  # TMDb doesn't provide genre in search
+
+                self.year_entry.delete(0, tk.END)
+                self.year_entry.insert(0, movie["release_date"].split("-")[0])
+
+                messagebox.showinfo("Success", "Movie details fetched!")
+            else:
+                messagebox.showerror("Error", "No movie found.")
+        else:
+            messagebox.showerror("Error", "Failed to fetch movie details.")
+
 
 # Run the application
 if __name__ == "__main__":
